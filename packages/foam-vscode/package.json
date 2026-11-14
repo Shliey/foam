@@ -318,6 +318,18 @@
       ],
       "commandPalette": [
         {
+          "command": "foam-vscode.search-note-content",
+          "when": "!isWeb"
+        },
+        {
+          "command": "foam-vscode.check-staged-note-links",
+          "when": "!isWeb"
+        },
+        {
+          "command": "foam-vscode.download-local-embedding",
+          "when": "!isWeb"
+        },
+        {
           "command": "foam-vscode.export-html-page",
           "when": "config.foam.experimental"
         },
@@ -428,6 +440,21 @@
       ]
     },
     "commands": [
+      {
+        "command": "foam-vscode.search-note-content",
+        "title": "Foam: Search Note Content",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "foam-vscode.check-staged-note-links",
+        "title": "Foam: Check Staged Note Links",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "foam-vscode.download-local-embedding",
+        "title": "Foam: Download Local Embedding Model",
+        "enablement": "!isWeb"
+      },
       {
         "command": "foam-vscode.show-whats-new",
         "title": "Foam: Show What's New"

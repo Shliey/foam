@@ -1,0 +1,7 @@
+{
+  "name": "foam-local-model",
+  "private": true,
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1"
+  }
+}

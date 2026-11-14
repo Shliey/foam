@@ -69,6 +69,14 @@ const config = {
           // Options (optional)
         }),
         {
+          name: 'note-search-web',
+          setup(build) {
+            build.onResolve({ filter: /\/note-search\/index$/ }, args => ({
+              path: path.resolve(args.resolveDir, 'vscode/features/note-search/web.ts'),
+            }));
+          },
+        },
+        {
           name: 'path-browserify',
           setup(build) {
             build.onResolve({ filter: /^path$/ }, args => {
@@ -184,6 +192,17 @@ async function buildExtension() {
   const targetConfig =
     entry === 'extension' ? config.extension[platform] : config.cli;
   await buildTarget(targetConfig);
+  if (entry === 'extension' && platform === 'node') {
+    await buildTarget({
+      platform: 'node',
+      target: 'node22',
+      format: 'cjs',
+      outfile: 'local-model/worker.cjs',
+      plugins: [],
+      entryPoints: ['local-model/worker.mts'],
+      external: ['@huggingface/transformers'],
+    });
+  }
 }
 
 function copyGraphBundleForCli() {

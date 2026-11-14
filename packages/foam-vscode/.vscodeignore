@@ -20,3 +20,7 @@ vsc-extension-quickstart.md
 **/*.ts
 assets/screenshots
 node_modules
+local-model/worker.mts
+local-model/node_modules/onnxruntime-node/bin/napi-v3/darwin/**
+local-model/node_modules/onnxruntime-node/bin/napi-v3/linux/**
+local-model/node_modules/onnxruntime-node/bin/napi-v3/win32/arm64/**

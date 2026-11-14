@@ -30,6 +30,10 @@ import { createMarkdownParser } from '@foam/core';
 import VsCodeBasedParserCache from './vscode/services/cache';
 import { createMatcherAndDataStore } from './vscode/services/editor';
 import { buildWorkspaceWatchGlob } from './vscode/utils/watch-glob';
+import {
+  createLocalEmbedding,
+  registerNoteSearch,
+} from './vscode/features/note-search/index';
 import { OllamaEmbeddingProvider } from './ai/providers/ollama/ollama-provider';
 import { initTelemetry } from './vscode/services/telemetry';
 
@@ -154,8 +158,9 @@ export async function activate(context: ExtensionContext) {
     const experimentalEnabled = workspace
       .getConfiguration('foam')
       .get('experimental');
+    const localEmbedding = createLocalEmbedding(context);
     const embeddingProvider = experimentalEnabled
-      ? new OllamaEmbeddingProvider()
+      ? localEmbedding ?? new OllamaEmbeddingProvider()
       : undefined;
 
     profiler.start();
@@ -171,6 +176,8 @@ export async function activate(context: ExtensionContext) {
       defaultExtension,
       embeddingProvider
     );
+
+    if (localEmbedding) registerNoteSearch(context, foamPromise, localEmbedding);
 
     // Load the features
     const featuresPromises = features.map(feature =>
