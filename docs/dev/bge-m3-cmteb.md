@@ -2,38 +2,18 @@
 
 **BGE-M3 = Dense Retrieval + Learned Sparse Retrieval + MaxSim Multi-vector Reranking**
 
-## Datasets and protocol
+## DuRetrieval dev subset
 
-- **DuRetrieval dev subset.** Select 64 official queries. Include the 322 passages with judgments for those queries and add deterministic background passages from the official corpus until the pool has 1,024 passages. Use every original passage as one searchable item and preserve its source ID. Compare E5 + BM25, E5 + BGE-M3 sparse, and the four BGE-M3 strategies. The MaxSim path reranks the same first 20 fused candidates. Show the first five results. Report macro Recall@20 over all known positives and nDCG@5 with unjudged passages scored as zero. [Dataset](https://huggingface.co/datasets/C-MTEB/DuRetrieval) · [Judgments](https://huggingface.co/datasets/C-MTEB/DuRetrieval-qrels)
-- **T2Reranking_zh2en dev subset.** Choose 100 official Chinese queries with at least one positive and one negative English passage. Deduplicate and deterministically shuffle each provided candidate set. Compare E5 dense, BGE-M3 dense, and MaxSim over the identical full candidate set for each query. Use binary relevance and report MRR@10 and nDCG@5. [Dataset](https://huggingface.co/datasets/C-MTEB/T2Reranking_zh2en)
-- **Timing.** Measure end-to-end under local CPU inference after model load. DuRetrieval builds its shared dense/sparse index once. MaxSim starts each measured query with an empty candidate-token cache. In T2, both methods encode the supplied candidates during the measurement. The reported figures apply to these two subsets and this machine. DuRetrieval includes known positives by construction and uses a much smaller background pool than the original benchmark.
+The comparison uses the same 64 official queries and 1,024 public passages, including all 322 judged passages for the selected queries. Each source passage is indexed as one item. Both strategies return five passages. Recall@20 measures candidate retrieval, and nDCG@5 measures final ranking. [Dataset](https://huggingface.co/datasets/C-MTEB/DuRetrieval) · [Judgments](https://huggingface.co/datasets/C-MTEB/DuRetrieval-qrels)
 
-## Results
-
-Windows CPU, AMD Ryzen 9 8945HX, Node v22.23.5, BGE-M3 q8. DuRetrieval initial encoding took 222.6 seconds.
-
-### DuRetrieval dev subset
-
-| Strategy | Hit@1 | Hit@5 | Recall@20 | nDCG@5 | P50 / P95 ms |
+| Strategy | Hit@1 | Hit@5 | Recall@20 | nDCG@5 | Query P50 / P95 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| E5 + BM25 | 62/64 | 64/64 | 0.9827 | 0.9647 | 6.8 / 9.0 |
-| E5 + BGE-M3 sparse | 63/64 | 64/64 | 0.9837 | 0.9649 | 22.8 / 27.1 |
-| BGE-M3 dense | 63/64 | 64/64 | 0.9991 | 0.9848 | 14.4 / 16.6 |
-| BGE-M3 sparse | 62/64 | 64/64 | 0.9611 | 0.9359 | 15.0 / 18.9 |
-| BGE-M3 dense + sparse | 64/64 | 64/64 | 0.9956 | 0.9840 | 16.2 / 17.8 |
-| BGE-M3 dense + sparse + MaxSim | 63/64 | 64/64 | 0.9956 | 0.9845 | 9916.1 / 16489.0 |
+| Original E5 + BM25 | 62/64 | 64/64 | 98.27% | 0.9647 | 6.8 / 9.0 ms |
+| BGE-M3 dense + learned sparse + MaxSim | 63/64 | 64/64 | 99.56% | 0.9845 | 9.92 / 16.49 s |
 
-Keeping E5 fixed and replacing BM25 with BGE-M3 sparse raised Hit@1 from 62/64 to 63/64. nDCG@5 rose from 0.9647 to 0.9649, while median query latency rose from 6.8 ms to 22.8 ms. Replacing E5 with BGE-M3 dense under the same sparse route increased nDCG@5 to 0.9840 and reached 64/64 at rank one. Compared with E5 + BM25, BGE-M3 fusion gained 1.93 percentage points in nDCG@5 and added 9.4 ms to median latency. BGE-M3 dense alone had the highest Recall@20 of the six strategies. The near-ceiling quality on this pool limits conclusions about the full corpus. Adding MaxSim moved one query's first relevant result down and raised nDCG@5 by about 0.0005. Candidate caching was cleared per reranked query, giving a P50 of 9.92 seconds.
+The full BGE-M3 pipeline found a relevant passage first for **one additional query**, increased candidate recall by **1.28 percentage points**, and improved nDCG@5 by **1.98 percentage points** on this fixed subset. Both strategies found a relevant passage in the top five for every query.
 
-### T2Reranking_zh2en dev subset
-
-| Score | Hit@1 | Hit@5 | MRR@10 | nDCG@5 | P50 / P95 ms |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| E5 dense | 53/100 | 95/100 | 0.7160 | 0.5627 | 313.4 / 803.3 |
-| BGE-M3 dense | 54/100 | 96/100 | 0.7139 | 0.5773 | 1727.7 / 4058.3 |
-| BGE-M3 MaxSim | 51/100 | 93/100 | 0.6932 | 0.5553 | 1843.4 / 4367.2 |
-
-The paired test used a median of 14 English candidates per query. BGE-M3 dense gained one first-position hit and 1.46 percentage points in nDCG@5 over E5 dense. E5 had a slightly higher MRR@10 and a lower median latency (313 ms versus 1,728 ms). MaxSim reduced both ranking metrics relative to BGE-M3 dense and added 116 ms median latency. Model comparisons include the actual Node/ONNX configuration and the E5 subprocess IPC overhead. The baselines were measured in a separate run on the same machine, with the identical fixture verified by SHA-256.
+Timings are from one Windows CPU (AMD Ryzen 9 8945HX), with both indexes built before timed queries. The BGE-M3 candidate-token cache was cleared for each timed query, so its latency includes encoding the candidates for MaxSim. The subset includes known positives by construction and has a smaller candidate pool than the full corpus.
 
 [Machine-readable per-query results](../../packages/foam-vscode/test-data/cmteb-results.json)
 
