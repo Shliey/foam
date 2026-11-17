@@ -251,9 +251,16 @@ export class PassageIndex {
         combined.set(i, (combined.get(i) ?? 0) + 1 / (61 + rank))
       );
     }
+    const candidates = [...combined]
+      .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+      .slice(0, 20)
+      .map(([i, score]) => ({
+        ...rows[i].chunk,
+        checksum: rows[i].checksum,
+        score,
+      }));
     const results: RankedPassage[] = [];
-    for (const [i, score] of [...combined].sort((a, b) => b[1] - a[1])) {
-      const { chunk, checksum } = rows[i];
+    for (const chunk of candidates) {
       if (
         results.some(
           item =>
@@ -263,9 +270,9 @@ export class PassageIndex {
         )
       )
         continue;
-      results.push({ ...chunk, checksum, score });
+      results.push(chunk);
       if (results.length === 5) break;
     }
-    return { results, semantic, modelError };
+    return { results, candidates, semantic, modelError };
   }
 }

@@ -193,15 +193,17 @@ async function buildExtension() {
     entry === 'extension' ? config.extension[platform] : config.cli;
   await buildTarget(targetConfig);
   if (entry === 'extension' && platform === 'node') {
-    await buildTarget({
-      platform: 'node',
-      target: 'node22',
-      format: 'cjs',
-      outfile: 'local-model/worker.cjs',
-      plugins: [],
-      entryPoints: ['local-model/worker.mts'],
-      external: ['@huggingface/transformers'],
-    });
+    for (const worker of ['worker', 'bge-worker']) {
+      await buildTarget({
+        platform: 'node',
+        target: 'node22',
+        format: 'cjs',
+        outfile: 'local-model/' + worker + '.cjs',
+        plugins: [],
+        entryPoints: ['local-model/' + worker + '.mts'],
+        external: ['@huggingface/transformers', 'onnxruntime-node'],
+      });
+    }
   }
 }
 

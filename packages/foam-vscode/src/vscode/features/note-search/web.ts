@@ -1,15 +1,15 @@
-import type { LocalEmbedding } from '../../../note-search/local';
+import type { BgeLocal } from '../../../note-search/bge-local';
 import type { Foam } from '../../../core/model/foam';
 import type { ExtensionContext } from 'vscode';
 
 export function createLocalEmbedding(
   _context: ExtensionContext
-): LocalEmbedding | undefined {
+): BgeLocal | undefined {
   return undefined;
 }
 
 export function registerNoteSearch(
   _context: ExtensionContext,
   _foam: Promise<Foam>,
-  _model: LocalEmbedding
+  _model: BgeLocal
 ) {}

@@ -24,3 +24,6 @@ local-model/worker.mts
 local-model/node_modules/onnxruntime-node/bin/napi-v3/darwin/**
 local-model/node_modules/onnxruntime-node/bin/napi-v3/linux/**
 local-model/node_modules/onnxruntime-node/bin/napi-v3/win32/arm64/**
+local-model/bge-worker.mts
+local-model/build-bge-heads.py
+local-model/worker.cjs

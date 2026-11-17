@@ -1043,12 +1043,13 @@
     "clean": "rimraf out",
     "watch": "nodemon --watch 'src/**/*.ts' --watch '../foam-core/src/**/*.ts' --watch '../foam-graph/src/**/*.ts' --exec 'yarn build' --ext ts",
     "tag-release": "node ../../scripts/tag-release.js vscode",
-    "package": "npx @vscode/vsce@4.1.0 package --yarn",
-    "publish:vscode": "npx @vscode/vsce@4.1.0 publish --oidc --skip-duplicate --packagePath foam-vscode-$npm_package_version.vsix",
-    "publish:openvsx": "npx ovsx@1.3.0 publish foam-vscode-$npm_package_version.vsix --skip-duplicate",
+    "prepackage": "node -e \"if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('The Foam BGE-M3 VSIX targets Windows x64')\" && npm ci --prefix local-model",
+    "package": "npx @vscode/vsce@4.1.0 package --target win32-x64 --no-dependencies --out foam-vscode-win32-x64.vsix",
+    "publish:vscode": "npx @vscode/vsce@4.1.0 publish --oidc --skip-duplicate --packagePath foam-vscode-win32-x64.vsix",
+    "publish:openvsx": "npx ovsx@1.3.0 publish foam-vscode-win32-x64.vsix --skip-duplicate",
     "release": "node release.js",
     "open-in-browser": "vscode-test-web --quality=stable --browser=chromium --extensionDevelopmentPath=. ",
-    "install-extension": "code --install-extension ./foam-vscode-$npm_package_version.vsix",
+    "install-extension": "code --install-extension ./foam-vscode-win32-x64.vsix",
     "vscode:start-debugging": "yarn clean && yarn watch"
   },
   "devDependencies": {

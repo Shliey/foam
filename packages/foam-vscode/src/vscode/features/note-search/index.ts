@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { toVsCodeUri } from '../../utils/vsc-utils';
 import type { Foam } from '../../../core/model/foam';
-import { LocalEmbedding } from '../../../note-search/local';
-import { PassageIndex } from '../../../note-search/search';
+import { BgeLocal } from '../../../note-search/bge-local';
+import { BgePassageIndex } from '../../../note-search/bge-search';
 import { checkStagedLinks } from '../../../note-search/staged';
 import { Config, hash } from '@foam/core';
 import type { Resource } from '@foam/core';
@@ -15,9 +15,9 @@ export function createLocalEmbedding(context: vscode.ExtensionContext) {
   const worker = vscode.Uri.joinPath(
     context.extensionUri,
     'local-model',
-    'worker.cjs'
+    'bge-worker.cjs'
   ).fsPath;
-  const provider = new LocalEmbedding(worker, cache);
+  const provider = new BgeLocal(worker, cache);
   context.subscriptions.push(provider);
   return provider;
 }
@@ -25,7 +25,7 @@ export function createLocalEmbedding(context: vscode.ExtensionContext) {
 export function registerNoteSearch(
   context: vscode.ExtensionContext,
   foamPromise: Promise<Foam>,
-  model: LocalEmbedding
+  model: BgeLocal
 ) {
   let stagedNext = 0;
   const stagedContent = new Map<string, string>();
@@ -35,7 +35,7 @@ export function registerNoteSearch(
         stagedContent.get(uri.toString()) ?? '',
     })
   );
-  const index = new PassageIndex();
+  const index = new BgePassageIndex();
   const dirty = new Map<string, Resource>();
   let initialized = false;
   let active = false;
@@ -49,12 +49,12 @@ export function registerNoteSearch(
           await vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Notification,
-              title: 'Downloading local embedding model',
+              title: 'Preparing local BGE-M3 model',
             },
             () => model.prepare()
           );
           void vscode.window.showInformationMessage(
-            'Local embedding model ready.'
+            'Local BGE-M3 model ready.'
           );
         } catch (error) {
           void vscode.window.showErrorMessage(message(error));
@@ -92,7 +92,7 @@ export function registerNoteSearch(
             context.subscriptions.push(
               foam.workspace.onDidAdd(queue),
               foam.workspace.onDidUpdate(({ new: note }) => {
-                index.delete(note.uri, true);
+                index.delete(note.uri);
                 queue(note);
               }),
               foam.workspace.onDidDelete(note => {
@@ -124,15 +124,11 @@ export function registerNoteSearch(
                     dirty.delete(path);
                   }
                 }
-                return index.rank(query, model.embedBatch);
+                return index.rank(query, model);
               }
             );
           while (true) {
-            const { results, semantic, modelError } = await search();
-            if (modelError)
-              void vscode.window.showWarningMessage(
-                modelError + ' Showing keyword results.'
-              );
+            const { results } = await search();
             if (!results.length) {
               void vscode.window.showInformationMessage(
                 'No matching indexed passages.'
@@ -154,9 +150,7 @@ export function registerNoteSearch(
                 item,
               })),
               {
-                placeHolder: semantic
-                  ? 'Hybrid search · select a passage'
-                  : 'Keyword search · select a passage',
+                placeHolder: 'BGE-M3 search · select a passage',
               }
             );
             if (!chosen) break;
@@ -175,7 +169,7 @@ export function registerNoteSearch(
             }
             const saved = await foam.workspace.readAsMarkdown(item.uri);
             if (saved === null || hash(saved) !== item.checksum) {
-              index.delete(item.uri, true);
+              index.delete(item.uri);
               const note = foam.workspace.find(item.uri);
               if (note && saved !== null) dirty.set(item.uri.path, note);
               void vscode.window.showWarningMessage(
@@ -204,7 +198,16 @@ export function registerNoteSearch(
             break;
           }
         } catch (error) {
-          void vscode.window.showErrorMessage(message(error));
+          const download = 'Download BGE-M3';
+          const action = await vscode.window.showErrorMessage(
+            'Note search failed. Download the model or run the search again. ' +
+              message(error),
+            download
+          );
+          if (action === download)
+            await vscode.commands.executeCommand(
+              'foam-vscode.download-local-embedding'
+            );
         } finally {
           active = false;
         }

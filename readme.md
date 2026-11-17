@@ -25,6 +25,8 @@ You can use **Foam** for organising your research, keeping re-discoverable notes
 
 ## Features
 
+**[BGE-M3 Note Search](docs/dev/bge-m3-cmteb.md)** · Dense Retrieval + Learned Sparse Retrieval + MaxSim Multi-vector Reranking
+
 ### Graph Visualization
 
 See how your notes are connected via a [graph](https://docs.foam.md/features/graph-view/) with the `Foam: Show Graph` command.
