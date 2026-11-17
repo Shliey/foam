@@ -128,3 +128,17 @@ it('compares complete Git trees, finds unchanged incoming links and ignores move
     rmSync(root, { recursive: true, force: true });
   }
 }, 20000);
+
+it('ranks a presegmented passage without introducing a title or truncating its text', async () => {
+  const index = new PassageIndex();
+  const text = 'background '.repeat(130) + 'DB_POOL_MAX';
+  index.setPassage(uri, text);
+  const inputs: string[] = [];
+  const result = await index.rank('DB_POOL_MAX', async values => {
+    inputs.push(...values);
+    return values.map(() => [1]);
+  });
+  expect(inputs[0]).toBe(text);
+  expect(result.results[0].uri).toEqual(uri);
+  expect(result.results[0].text).toBe(text);
+});

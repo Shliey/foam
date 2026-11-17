@@ -1,3 +1,4 @@
+const { createHash } = require('node:crypto');
 const { readFileSync, writeFileSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 const { cpus } = require('node:os');
@@ -158,7 +159,8 @@ async function main() {
     throw new Error(
       'Usage: node cmteb-bge-eval.cjs <fixture.json> <bge-cache> <output.json>'
     );
-  const data = JSON.parse(readFileSync(fixture, 'utf8'));
+  const input = readFileSync(fixture);
+  const data = JSON.parse(input);
   const model = new BgeLocal(
     join(__dirname, '../local-model/bge-worker.cjs'),
     resolve(cache)
@@ -173,6 +175,7 @@ async function main() {
     const t2 = await evaluateT2(data.t2, model);
     const result = {
       seed: data.seed,
+      fixtureSha256: createHash('sha256').update(input).digest('hex'),
       files: data.files,
       modelKey: model.key,
       modelLoadMs,
@@ -190,7 +193,10 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error(error);
-  process.exitCode = 1;
-});
+module.exports = { metrics, summarize };
+
+if (require.main === module)
+  main().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+  });

@@ -118,24 +118,40 @@ export class PassageIndex {
   private reused = new Map<string, Map<string, number[]>>();
 
   set(note: Resource, source: string) {
+    this.setEntry(note.uri, source, () => passages(note, source));
+  }
+
+  setPassage(uri: URI, text: string) {
+    this.setEntry(uri, text, () => [
+      {
+        uri,
+        text,
+        input: text,
+        heading: '',
+        start: 0,
+        end: 1,
+      },
+    ]);
+  }
+
+  private setEntry(uri: URI, source: string, createPassages: () => Passage[]) {
     const checksum = hash(source);
-    if (this.entries.get(note.uri.path)?.checksum === checksum) return;
-    const chunks = passages(note, source);
-    const cached =
-      this.reused.get(note.uri.path) ?? new Map<string, number[]>();
-    const previous = this.entries.get(note.uri.path);
+    if (this.entries.get(uri.path)?.checksum === checksum) return;
+    const chunks = createPassages();
+    const cached = this.reused.get(uri.path) ?? new Map<string, number[]>();
+    const previous = this.entries.get(uri.path);
     previous?.vectors?.forEach((vector, i) =>
       cached.set(previous.passages[i].input, vector)
     );
     this.reused.set(
-      note.uri.path,
+      uri.path,
       new Map(
         chunks
           .map(chunk => [chunk.input, cached.get(chunk.input)])
           .filter((pair): pair is [string, number[]] => Array.isArray(pair[1]))
       )
     );
-    this.entries.set(note.uri.path, {
+    this.entries.set(uri.path, {
       checksum,
       passages: chunks,
       words: chunks.map(chunk => frequencies(chunk.input)),
